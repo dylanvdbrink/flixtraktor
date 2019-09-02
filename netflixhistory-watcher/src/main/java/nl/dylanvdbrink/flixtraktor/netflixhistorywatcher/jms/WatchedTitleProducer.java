@@ -1,11 +1,13 @@
 package nl.dylanvdbrink.flixtraktor.netflixhistorywatcher.jms;
 
 import lombok.extern.apachecommons.CommonsLog;
-import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
+import org.apache.activemq.ActiveMQConnectionFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import javax.jms.*;
 
+@Component
 @CommonsLog
 public class WatchedTitleProducer {
 
