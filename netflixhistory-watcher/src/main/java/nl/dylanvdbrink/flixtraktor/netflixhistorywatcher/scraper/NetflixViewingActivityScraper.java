@@ -92,7 +92,7 @@ public class NetflixViewingActivityScraper {
             throw new NetflixScrapeException("Could not find profile: " + netflixProfile);
         }
 
-        String buildIdentifier = (String) js.executeScript("netflix.appContext.state.model.models.serverDefs.data.BUILD_IDENTIFIER");
+        String buildIdentifier = (String) js.executeScript("return netflix.appContext.state.model.models.serverDefs.data.BUILD_IDENTIFIER");
 
         driver.get(String.format("%s/api/shakti/%s/viewingactivitycsv", NETFLIX_BASEURL, buildIdentifier));
         String content = driver.getPageSource().substring(121).replace("</pre></body></html>", "").trim();
