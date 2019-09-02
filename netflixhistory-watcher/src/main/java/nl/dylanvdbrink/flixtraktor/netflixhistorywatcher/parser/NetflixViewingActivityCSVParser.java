@@ -57,8 +57,7 @@ public class NetflixViewingActivityCSVParser {
 
             int dateStart = readLine.lastIndexOf(',') + 1;
             String title = readLine.substring(1, dateStart - 2);
-            String sdate = readLine.substring(dateStart).replaceAll("\"", "");
-            LocalDate date = LocalDate.parse(sdate, DateTimeFormatter.ofPattern("dd-MM-uu"));
+            String date = readLine.substring(dateStart).replaceAll("\"", "");
 
             NetflixTitle nt = new NetflixTitle();
             nt.setTitle(title);
