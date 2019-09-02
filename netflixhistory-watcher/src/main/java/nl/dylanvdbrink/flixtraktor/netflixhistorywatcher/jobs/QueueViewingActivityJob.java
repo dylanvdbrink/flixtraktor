@@ -8,10 +8,12 @@ import nl.dylanvdbrink.flixtraktor.netflixhistorywatcher.pojo.NetflixTitle;
 import nl.dylanvdbrink.flixtraktor.netflixhistorywatcher.scraper.NetflixViewingActivityScraper;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 
 @Component
@@ -20,6 +22,9 @@ public class QueueViewingActivityJob extends QuartzJobBean {
 
     private final NetflixViewingActivityScraper scraper;
     private final WatchedTitleProducer producer;
+
+    @Value("${maxbatchsize:0}")
+    private int maxBatchSize;
 
     public QueueViewingActivityJob(NetflixViewingActivityScraper scraper, WatchedTitleProducer producer) {
         this.scraper = scraper;
@@ -32,7 +37,12 @@ public class QueueViewingActivityJob extends QuartzJobBean {
 
         try {
             List<NetflixTitle> titles = scraper.getViewingActivity();
+            Collections.reverse(titles);
             Gson gson = new Gson();
+
+            if (maxBatchSize != 0) {
+                titles = titles.subList(titles.size() - maxBatchSize, titles.size());
+            }
 
             for (NetflixTitle nt : titles) {
                 producer.sendMessage(gson.toJson(nt));
