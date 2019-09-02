@@ -4,6 +4,6 @@
 	<br>
 </div>
 
-<p class="center">
+<p align="center">
 ⚠️ Work in Progress ⚠️
 </p>
