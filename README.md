@@ -9,8 +9,7 @@
 </p>
 
 ### Features
-- [x] Retrieving the Netflix Viewing Activity
-- [ ] Get Trakt ID of watched title
+- [x] Retrieve Netflix Viewing Activity
 - [ ] Sync to trakt
 - [ ] Store viewing history locally (e.g. to do analytics)
 
