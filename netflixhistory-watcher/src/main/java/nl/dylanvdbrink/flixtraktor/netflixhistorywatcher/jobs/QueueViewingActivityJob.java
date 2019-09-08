@@ -5,7 +5,7 @@ import lombok.extern.apachecommons.CommonsLog;
 import nl.dylanvdbrink.flixtraktor.netflixhistorywatcher.jms.WatchedTitleProducer;
 import nl.dylanvdbrink.flixtraktor.netflixhistorywatcher.exceptions.NetflixScrapeException;
 import nl.dylanvdbrink.flixtraktor.netflixhistorywatcher.pojo.NetflixTitle;
-import nl.dylanvdbrink.flixtraktor.netflixhistorywatcher.scraper.NetflixViewingActivityScraper;
+import nl.dylanvdbrink.flixtraktor.netflixhistorywatcher.scraper.NetflixViewingActivityService;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,14 +20,14 @@ import java.util.List;
 @CommonsLog
 public class QueueViewingActivityJob extends QuartzJobBean {
 
-    private final NetflixViewingActivityScraper scraper;
+    private final NetflixViewingActivityService viewingactivityService;
     private final WatchedTitleProducer producer;
 
     @Value("${maxbatchsize:0}")
     private int maxBatchSize;
 
-    public QueueViewingActivityJob(NetflixViewingActivityScraper scraper, WatchedTitleProducer producer) {
-        this.scraper = scraper;
+    public QueueViewingActivityJob(NetflixViewingActivityService viewingactivityService, WatchedTitleProducer producer) {
+        this.viewingactivityService = viewingactivityService;
         this.producer = producer;
     }
 
@@ -36,7 +36,7 @@ public class QueueViewingActivityJob extends QuartzJobBean {
         log.info("QueueViewingActivityJob started");
 
         try {
-            List<NetflixTitle> titles = scraper.getViewingActivity();
+            List<NetflixTitle> titles = viewingactivityService.getViewingActivity();
             Collections.reverse(titles);
             Gson gson = new Gson();
 

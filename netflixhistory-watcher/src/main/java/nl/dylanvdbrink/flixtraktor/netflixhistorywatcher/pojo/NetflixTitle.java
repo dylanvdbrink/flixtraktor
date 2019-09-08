@@ -10,7 +10,20 @@ import lombok.NoArgsConstructor;
 public class NetflixTitle {
 
     private String title;
-    private String watchDate;
+    private String videoTitle;
+    private long movieID;
+    private String country;
+    private int bookmark;
+    private long date;
+    private int deviceType;
+    private String dateStr;
+    private int index;
+    private String topNodeId;
+    private long series;
+    private String seriesTitle;
+    private String seasonDescriptor;
+    private String episodeTitle;
+    private String estRating;
 
 }
 

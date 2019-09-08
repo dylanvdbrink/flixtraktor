@@ -2,8 +2,9 @@ package nl.dylanvdbrink.flixtraktor.netflixhistorywatcher.scraper;
 
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import lombok.extern.apachecommons.CommonsLog;
-import nl.dylanvdbrink.flixtraktor.netflixhistorywatcher.parser.NetflixViewingActivityCSVParser;
 import nl.dylanvdbrink.flixtraktor.netflixhistorywatcher.exceptions.NetflixScrapeException;
 import nl.dylanvdbrink.flixtraktor.netflixhistorywatcher.pojo.NetflixTitle;
 import org.apache.http.client.HttpClient;
@@ -14,24 +15,23 @@ import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeDriverService;
 import org.openqa.selenium.chrome.ChromeOptions;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@SuppressWarnings("UnstableApiUsage")
 @Service
 @CommonsLog
-public class NetflixViewingActivityScraper {
+public class NetflixViewingActivityService {
 
     private static final String NETFLIX_BASEURL = "https://www.netflix.com";
     private static final String LOGIN = "/nl-en/login";
-
-    private final NetflixViewingActivityCSVParser parser;
 
     @Value("${netflix.username}")
     private String netflixUsername;
@@ -48,16 +48,21 @@ public class NetflixViewingActivityScraper {
     @Value("${chromedriver.binary.path}")
     private String chromedriverPath;
 
-    @Autowired
-    public NetflixViewingActivityScraper(NetflixViewingActivityCSVParser parser) {
-        this.parser = parser;
-    }
+    @Value("${maxbatchsize:20}")
+    private int maxBatchSize;
 
+    /**
+     * Get the viewing activity
+     * @return List of NetflixTitle objects
+     * @throws NetflixScrapeException If something went wrong while using the chromedriver
+     * @throws IOException If something went wrong
+     * @throws InterruptedException  If something went wrong while using the chromedriver
+     */
     public List<NetflixTitle> getViewingActivity() throws NetflixScrapeException, IOException, InterruptedException {
         List<NetflixTitle> titles;
         Gson gson = new Gson();
 
-        WebDriver driver = createDriver();
+        WebDriver driver = createChromeDriver();
 
         JavascriptExecutor js;
         if (driver instanceof JavascriptExecutor) {
@@ -72,7 +77,7 @@ public class NetflixViewingActivityScraper {
             driver.findElement(By.id("password")).sendKeys(netflixPassword);
             driver.findElement(By.id("email")).submit();
         } catch (NoSuchElementException nsee) {
-            log.debug("Trying alternate element ids");
+            log.debug("Trying alternate element ids for logging in");
             driver.findElement(By.id("id_userLoginId")).sendKeys(netflixUsername);
             driver.findElement(By.id("id_password")).sendKeys(netflixPassword);
             driver.findElement(By.id("id_userLoginId")).submit();
@@ -94,26 +99,40 @@ public class NetflixViewingActivityScraper {
 
         String buildIdentifier = (String) js.executeScript("return netflix.appContext.state.model.models.serverDefs.data.BUILD_IDENTIFIER");
 
-        driver.get(String.format("%s/api/shakti/%s/viewingactivitycsv", NETFLIX_BASEURL, buildIdentifier));
-        String content = driver.getPageSource().substring(121).replace("</pre></body></html>", "").trim();
-        driver.quit();
+        driver.get(String.format("%s/shakti/%s/viewingactivity?pgsize=%s", NETFLIX_BASEURL, buildIdentifier, Integer.toString(maxBatchSize)));
+        JsonElement element = new JsonParser().parse(removeHtmlTags(driver.getPageSource()));
 
-        Type t = new TypeToken<HashMap<String, String>>(){}.getType();
-        Map<String, String> response = gson.fromJson(content, t);
-        String csv = response.get("csv");
-        log.debug("Got viewingactivity csv=" + csv);
+        Type listType = new TypeToken<ArrayList<NetflixTitle>>(){}.getType();
+        titles = gson.fromJson(element.getAsJsonObject().get("viewedItems"), listType);
 
-        titles = parser.parse(csv);
         return titles;
     }
 
-    private WebDriver createDriver() throws IOException {
+    /**
+     * Removes the html tags at the begin and end of the pagesource
+     * @param pageSource The page source
+     * @return Returns the pagesource without the html tags
+     */
+    private String removeHtmlTags(final String pageSource) {
+        String result;
+        result = pageSource.replace("<html xmlns=\"http://www.w3.org/1999/xhtml\"><head></head><body>" +
+                "<pre style=\"word-wrap: break-word; white-space: pre-wrap;\">", "");
+        result = result.replace("</pre></body></html>", "");
+        return result.trim();
+    }
+
+    /**
+     * Create the Chrome webdriver
+     * @return
+     * @throws IOException
+     */
+    private WebDriver createChromeDriver() throws IOException {
         System.setProperty("webdriver.chrome.driver", chromedriverPath);
 
         ChromeOptions options = new ChromeOptions();
         options.addArguments("--test-type");
         options.addArguments("--headless");
-        options.addArguments("--disable-extensions"); //to disable browser extension popup
+        options.addArguments("--disable-extensions");
 
         ChromeDriverService driverService = ChromeDriverService.createDefaultService();
         ChromeDriver driver = new ChromeDriver(driverService, options);
@@ -135,5 +154,4 @@ public class NetflixViewingActivityScraper {
 
         return driver;
     }
-
 }

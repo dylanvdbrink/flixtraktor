@@ -61,7 +61,7 @@ public class NetflixViewingActivityCSVParser {
 
             NetflixTitle nt = new NetflixTitle();
             nt.setTitle(title);
-            nt.setWatchDate(date);
+            nt.setDateStr(date);
 
             titles.add(nt);
         }
