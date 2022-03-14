@@ -29,7 +29,7 @@ public class ScheduledSyncService {
                                 StorageService storageService,
                                 TraktClient traktClient,
                                 @Value("${sync.sync-all-on-init:false}") boolean syncAllOnInit,
-                                @Value("${sync.page-size:50}") int pageSize) {
+                                @Value("${sync.page-size:100}") int pageSize) {
         this.netflixViewingActivityService = netflixViewingActivityService;
         this.storageService = storageService;
         this.traktClient = traktClient;
@@ -38,7 +38,7 @@ public class ScheduledSyncService {
     }
 
     @Scheduled(cron = "${sync.cron}")
-    public void syncViewingActivity() throws InterruptedException {
+    public void syncViewingActivity() throws InterruptedException, IOException {
         StoredData storedData;
         try {
             storedData = storageService.getStoredData();
@@ -52,17 +52,42 @@ public class ScheduledSyncService {
             return;
         }
 
+        log.info("Starting sync");
+        storedData.setSyncRunning(true);
+        storageService.setStoredData(storedData);
+
         try {
             int lastSyncedHash = storedData.getLastSyncedHash();
             if (lastSyncedHash < 1 && syncAllOnInit) {
                 // No last synced hash, retrieve everything
-                log.info("Syncing complete viewing activity, this might take a while...");
-                traktSync(Integer.MAX_VALUE, storedData);
-                log.info("Done syncing complete viewing activity");
+                log.info("Retrieving complete viewing activity, this might take a while...");
+                List<NetflixTitle> titles = netflixViewingActivityService.getViewingActivity(Integer.MAX_VALUE);
+                log.info("Done retrieving complete viewing activity");
+                traktSync(titles, storedData);
                 return;
             }
 
-            traktSync(pageSize, storedData);
+            List<NetflixTitle> titles = netflixViewingActivityService.getViewingActivity(pageSize);
+
+            // Only sync every title newer than the last synced hash
+            int lastSyncedIndex = -1;
+            for (NetflixTitle title : titles) {
+                if (title.hashCode() == lastSyncedHash) {
+                    lastSyncedIndex = titles.indexOf(title);
+                }
+            }
+
+            if (lastSyncedIndex == -1) {
+                log.warn("Could not find the last synced title in the retrieved activity. This could mean that the sync is missing titles. " +
+                        "Make sure the pageSize and sync cron properties are adjusted accordingly to sync all your history.");
+            } else if (lastSyncedIndex == 0) {
+                log.info("The last synced title was the first in the retrieved activity. Nothing to sync.");
+                return;
+            } else {
+                titles = titles.subList(0, lastSyncedIndex - 1);
+            }
+
+            traktSync(titles, storedData);
         } catch (NetflixScrapeException | IOException e) {
             log.error("Could not sync viewing history", e);
         } finally {
@@ -75,18 +100,13 @@ public class ScheduledSyncService {
         }
     }
 
-    private void traktSync(int pageSize, StoredData storedData) throws NetflixScrapeException, IOException, InterruptedException {
-        log.info("Starting sync");
-        storedData.setSyncRunning(true);
-        storageService.setStoredData(storedData);
-
-        List<NetflixTitle> titles = netflixViewingActivityService.getViewingActivity(pageSize);
+    private void traktSync(List<NetflixTitle> titles, StoredData storedData) throws NetflixScrapeException, IOException, InterruptedException {
         log.info("Syncing with Trakt");
         traktClient.addToCollection(titles);
 
         int lastSyncedHash = 0;
         if (!titles.isEmpty()) {
-            NetflixTitle lastTitle = titles.get(titles.size() - 1);
+            NetflixTitle lastTitle = titles.get(0);
             lastSyncedHash = lastTitle.hashCode();
         }
         log.debug("Setting last synced hash to " + lastSyncedHash);

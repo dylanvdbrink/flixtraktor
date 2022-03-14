@@ -18,18 +18,16 @@ import java.io.IOException;
 @CommonsLog
 public class FlixtraktorApplication implements CommandLineRunner {
 	private final TraktService traktService;
-	private final NetflixViewingActivityService netflixViewingActivityService;
 
-	public FlixtraktorApplication(TraktService traktService, NetflixViewingActivityService netflixViewingActivityService) {
+	public FlixtraktorApplication(TraktService traktService) {
 		this.traktService = traktService;
-		this.netflixViewingActivityService = netflixViewingActivityService;
 	}
 
 	public static void main(String[] args) {
 		SpringApplication.run(FlixtraktorApplication.class, args);
 	}
 
-	public void run(String... args) throws IOException, TraktException, InterruptedException, NetflixScrapeException {
+	public void run(String... args) throws IOException, TraktException, InterruptedException {
 		traktService.ensureAuthorized();
 	}
 
