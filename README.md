@@ -8,7 +8,7 @@
 
 ### Features
 - [x] Retrieve Netflix Viewing Activity
-- [ ] Sync to trakt
+- [x] Sync to trakt
 
 ------
 
