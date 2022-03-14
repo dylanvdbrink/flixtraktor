@@ -1,12 +1,10 @@
 <div align="center">
-	<img height="300" src="media/app-logo.png" alt="FlixTraktor">
+	<img height="300" src=".github/media/app-logo.png" alt="FlixTraktor">
 	<br>
 	<br>
 </div>
 
-<p align="center">
-⚠️ Work in Progress ⚠️
-</p>
+[![Maven build](https://github.com/dylanvdbrink/flixtraktor/actions/workflows/maven.yml/badge.svg)](https://github.com/dylanvdbrink/flixtraktor/actions/workflows/maven.yml)
 
 ### Features
 - [x] Retrieve Netflix Viewing Activity
@@ -25,8 +23,9 @@
 #### Episode lookup
 Because Netflix returns the localized titles of episode names, we need a flow of calls to the Trakt API to make sure
 we sync the correct episodes, which goes as follows:
-1. Search the Trakt API for the show name, if it does not return a show, we cannot sync it.
-2. Capture the season number by removing all text from the seasonDescription (e.g. Season 3). It is necessary to do 
-this, again because the season descriptions are localized as well. If the show only has 1 season, we continue with that season
-because 1. The episode probably belongs to that season and 2. sometimes shows only have 1 season and therefore are not numbered.
-3. Search through the returned episodes to find the one with the correct season and episode number
+1. Search the Trakt API for the show name + episode title, if it returns an episode, we check the 
+[Levenshtein distance](https://en.wikipedia.org/wiki/Levenshtein_distance) of the name of the show to verify the match is correct. 
+If it does not return an episode, we go to step 2. 
+2. Capture the season and episode number by removing all text from the seasonDescription and episode title (e.g. "Season 3", "Episode 1"). 
+It is necessary to do this because both descriptions are localized as well. If it finds an episode and the title of the show is a match, we 
+sync that episode. If not, we do not sync that title.
