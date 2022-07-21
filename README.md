@@ -4,7 +4,7 @@
 	<br>
 </div>
 
-[![Maven build](https://github.com/dylanvdbrink/flixtraktor/actions/workflows/maven.yml/badge.svg)](https://github.com/dylanvdbrink/flixtraktor/actions/workflows/maven.yml)
+[![Build status](https://github.com/dylanvdbrink/flixtraktor/actions/workflows/build.yml/badge.svg)](https://github.com/dylanvdbrink/flixtraktor/actions/workflows/build.yml)
 
 ### Features
 - [x] Retrieve Netflix Viewing Activity
