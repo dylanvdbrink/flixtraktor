@@ -47,7 +47,8 @@ jobs:
         key: cache-maven-artifacts
     - name: Check if cache restored artifacts
       run: |
-        [ ! -f target/flixtraktor*.jar ] && echo "Artifact does not exist." && exit 2
+        cd target
+        ls -la
     - uses: olegtarasov/get-tag@v2.1.1
       id: tagName
     - name: Log in to Docker Hub
