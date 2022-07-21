@@ -6,8 +6,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
 import lombok.extern.apachecommons.CommonsLog;
-import nl.dylanvdbrink.flixtraktor.exceptions.NetflixScrapeException;
 import nl.dylanvdbrink.flixtraktor.pojo.NetflixTitle;
+import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeDriverService;
@@ -117,7 +117,9 @@ public class NetflixViewingActivityService {
 
         log.debug("Retrieving viewing activity...");
         driver.get(String.format("%s/shakti/%s/viewingactivity?pgsize=%s", NETFLIX_BASEURL, buildIdentifier, pageSize));
-        JsonReader reader = new JsonReader(new StringReader(removeHtmlTags(driver.getPageSource())));
+        String pageSource = driver.getPageSource();
+        log.debug("Pagesource subset (0-1000): " + pageSource.substring(0, 1000));
+        JsonReader reader = new JsonReader(new StringReader(removeHtmlTags(pageSource)));
         reader.setLenient(true);
         JsonElement element = JsonParser.parseReader(reader);
 
@@ -135,9 +137,9 @@ public class NetflixViewingActivityService {
      */
     private String removeHtmlTags(final String pageSource) {
         String result;
-        result = pageSource.replace("<html><head></head><body>" +
-                "<pre style=\"word-wrap: break-word; white-space: pre-wrap;\">", "");
-        result = result.replace("</pre></body></html>", "");
+        int beginIndex = pageSource.indexOf("{");
+        int endIndex = pageSource.lastIndexOf("}") + 1;
+        result = pageSource.substring(beginIndex, endIndex);
         return result.trim();
     }
 
@@ -145,7 +147,9 @@ public class NetflixViewingActivityService {
      * Create the Chrome webdriver
      */
     private WebDriver createChromeDriver() throws URISyntaxException, IOException, InterruptedException {
-        System.setProperty("webdriver.chrome.driver", chromedriverPath);
+        if (!StringUtils.isBlank(chromedriverPath)) {
+            System.setProperty("webdriver.chrome.driver", chromedriverPath);
+        }
 
         ChromeOptions options = new ChromeOptions();
         options.addArguments("--test-type");

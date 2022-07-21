@@ -1,11 +1,8 @@
 package nl.dylanvdbrink.flixtraktor;
 
 import lombok.extern.apachecommons.CommonsLog;
-import nl.dylanvdbrink.flixtraktor.exceptions.NetflixScrapeException;
-import nl.dylanvdbrink.flixtraktor.exceptions.TraktException;
-import nl.dylanvdbrink.flixtraktor.pojo.NetflixTitle;
-import nl.dylanvdbrink.flixtraktor.service.scraper.NetflixViewingActivityService;
-import nl.dylanvdbrink.flixtraktor.service.trakt.TraktService;
+import nl.dylanvdbrink.flixtraktor.service.trakt.TraktException;
+import nl.dylanvdbrink.flixtraktor.service.trakt.TraktAuthenticationService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -17,10 +14,10 @@ import java.io.IOException;
 @EnableScheduling
 @CommonsLog
 public class FlixtraktorApplication implements CommandLineRunner {
-	private final TraktService traktService;
+	private final TraktAuthenticationService traktAuthenticationService;
 
-	public FlixtraktorApplication(TraktService traktService) {
-		this.traktService = traktService;
+	public FlixtraktorApplication(TraktAuthenticationService traktAuthenticationService) {
+		this.traktAuthenticationService = traktAuthenticationService;
 	}
 
 	public static void main(String[] args) {
@@ -28,7 +25,7 @@ public class FlixtraktorApplication implements CommandLineRunner {
 	}
 
 	public void run(String... args) throws IOException, TraktException, InterruptedException {
-		traktService.ensureAuthorized();
+		traktAuthenticationService.ensureAuthorized();
 	}
 
 }

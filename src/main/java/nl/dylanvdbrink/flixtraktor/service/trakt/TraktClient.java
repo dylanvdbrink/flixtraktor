@@ -6,11 +6,11 @@ import com.uwetrottmann.trakt5.entities.*;
 import com.uwetrottmann.trakt5.enums.Extended;
 import com.uwetrottmann.trakt5.enums.Type;
 import lombok.extern.apachecommons.CommonsLog;
-import nl.dylanvdbrink.flixtraktor.exceptions.TraktException;
 import nl.dylanvdbrink.flixtraktor.pojo.NetflixTitle;
 import nl.dylanvdbrink.flixtraktor.pojo.StoredAuthData;
 import nl.dylanvdbrink.flixtraktor.service.storage.StorageService;
 import org.apache.commons.text.similarity.LevenshteinDistance;
+import org.javatuples.Triplet;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.threeten.bp.Instant;
@@ -75,7 +75,7 @@ public class TraktClient {
         }
     }
 
-    public void addToCollection(List<NetflixTitle> titles) throws InterruptedException {
+    public Triplet<List<SyncEpisode>, List<SyncMovie>, List<String>> addToCollection(List<NetflixTitle> titles) throws InterruptedException {
         List<SyncMovie> syncMovies = new ArrayList<>();
         List<SyncEpisode> syncEpisodes = new ArrayList<>();
         List<String> errors = new ArrayList<>();
@@ -141,11 +141,11 @@ public class TraktClient {
                 if (!response.isSuccessful()) {
                     throw new TraktException("Trakt sync was unsuccesful: " + response.errorBody().string());
                 } else {
-                    log.info(MessageFormat.format("Synced {0} episodes", episodePartitions.size()));
+                    log.info(MessageFormat.format("Synced {0} episodes", partition.size()));
                 }
-                Thread.sleep(1000);
+                Thread.sleep(2000);
             }
-            log.info(MessageFormat.format("Movies sync done. Synced {0} movies.", syncMovies.size()));
+            log.info(MessageFormat.format("Episode sync done. Synced {0} episodes.", syncEpisodes.size()));
 
             List<List<SyncMovie>> moviePartitions = Lists.partition(syncMovies, 200);
             for (List<SyncMovie> partition : moviePartitions) {
@@ -156,14 +156,16 @@ public class TraktClient {
                 if (!response.isSuccessful()) {
                     throw new TraktException("Trakt sync was unsuccesful: " + response.errorBody().string());
                 } else {
-                    log.info(MessageFormat.format("Synced {0} movies", moviePartitions.size()));
+                    log.info(MessageFormat.format("Synced {0} movies", partition.size()));
                 }
-                Thread.sleep(1000);
+                Thread.sleep(2000);
             }
-            log.info(MessageFormat.format("Episode sync done. Synced {0} episodes.", syncEpisodes.size()));
+            log.info(MessageFormat.format("Movie sync done. Synced {0} movies.", syncMovies.size()));
         } catch (IOException | TraktException e) {
             log.error("Could not sync with Trakt", e);
         }
+
+        return new Triplet<>(syncEpisodes, syncMovies, errors);
     }
 
     public SearchResult searchEpisode(NetflixTitle netflixTitle) throws TraktException {

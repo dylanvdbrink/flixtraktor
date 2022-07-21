@@ -3,7 +3,6 @@ package nl.dylanvdbrink.flixtraktor.service.trakt;
 import com.uwetrottmann.trakt5.entities.AccessToken;
 import com.uwetrottmann.trakt5.entities.DeviceCode;
 import lombok.extern.apachecommons.CommonsLog;
-import nl.dylanvdbrink.flixtraktor.exceptions.TraktException;
 import nl.dylanvdbrink.flixtraktor.pojo.StoredAuthData;
 import nl.dylanvdbrink.flixtraktor.pojo.StoredData;
 import nl.dylanvdbrink.flixtraktor.service.storage.StorageService;
@@ -16,11 +15,11 @@ import java.time.ZonedDateTime;
 
 @Service
 @CommonsLog
-public class TraktService {
+public class TraktAuthenticationService {
     private final StorageService storageService;
     private final TraktClient traktClient;
 
-    public TraktService(StorageService storageService, TraktClient traktClient) {
+    public TraktAuthenticationService(StorageService storageService, TraktClient traktClient) {
         this.storageService = storageService;
         this.traktClient = traktClient;
     }

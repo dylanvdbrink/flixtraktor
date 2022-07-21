@@ -1,4 +1,4 @@
-package nl.dylanvdbrink.flixtraktor.exceptions;
+package nl.dylanvdbrink.flixtraktor.service.storage;
 
 public class StoredDataException extends Exception {
 

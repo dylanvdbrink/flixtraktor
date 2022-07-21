@@ -1,4 +1,4 @@
-package nl.dylanvdbrink.flixtraktor.exceptions;
+package nl.dylanvdbrink.flixtraktor.service.trakt;
 
 public class TraktException extends Exception {
 
