@@ -22,15 +22,11 @@ jobs:
     - uses: olegtarasov/get-tag@v2.1.1
       if: startsWith(github.ref, 'refs/tags/')
       id: tagName
-    - name: Set buildnumber
-      if: startsWith(github.ref, 'refs/tags/')
-      id: versionLabel
-      run: echo "::set-output name=result::${{ steps.tagName.outputs.tag }}.$(date +'%Y%m%d').${{github.run_number}}.${{ github.run_id }}"
     - name: Set versions
       if: startsWith(github.ref, 'refs/tags/')
       env:
-        ARTIFACT_VERSION: ${{ steps.buildnumber.outputs.result }}
-      run: mvn versions:set -DnewVersion=${{ steps.versionLabel.outputs.result }}
+        ARTIFACT_VERSION: ${{ steps.tagName.outputs.tag }}
+      run: mvn versions:set -DnewVersion=${{ steps.tagName.outputs.tag }}
     - name: Build with Maven
       run: mvn -B package
     - name: Cache build artifacts
@@ -41,7 +37,6 @@ jobs:
         key: artifacts-${{github.run_number}}-${{github.run_attempt}}
     outputs:
       tagName: ${{ steps.tagName.outputs.tag }}
-      versionLabel: ${{ steps.versionLabel.outputs.result }}
 
   publish:
     if: startsWith(github.ref, 'refs/tags/')
@@ -55,10 +50,6 @@ jobs:
       with:
         path: target
         key: artifacts-${{github.run_number}}-${{github.run_attempt}}
-    - name: Check if cache restored artifacts
-      run: |
-        cd target
-        ls -la
     - name: Log in to Docker Hub
       env:
         DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
@@ -67,7 +58,7 @@ jobs:
         docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
     - name: Deploy Docker image
       env:
-        BUILDNUMBER: ${{needs.build.outputs.versionLabel}}
+        BUILDNUMBER: ${{needs.build.outputs.tagName}}
       run: |
         docker build . --build-arg JAR_FILE=target/flixtraktor-$BUILDNUMBER.jar \
           --tag ${{ secrets.DOCKER_USERNAME }}/flixtraktor:$BUILDNUMBER
