@@ -22,9 +22,15 @@ jobs:
     - uses: olegtarasov/get-tag@v2.1.1
       if: startsWith(github.ref, 'refs/tags/')
       id: tagName
+    - name: Set buildnumber
+      if: startsWith(github.ref, 'refs/tags/')
+      id: versionLabel
+      run: echo "::set-output name=result::${{ steps.tagName.outputs.tag }}.$(date +'%Y%m%d').${{github.run_number}}.${{ github.run_id }}"
     - name: Set versions
       if: startsWith(github.ref, 'refs/tags/')
-      run: mvn versions:set -DnewVersion=$GIT_TAG_NAME.${{github.run_number}}.${{github.run_attempt}}
+      env:
+        ARTIFACT_VERSION: ${{ steps.buildnumber.outputs.result }}
+      run: mvn versions:set -DnewVersion=${{ steps.versionLabel.outputs.result }}
     - name: Build with Maven
       run: mvn -B package
     - name: Cache build artifacts
@@ -33,6 +39,9 @@ jobs:
       with:
         path: target
         key: artifacts-${{github.run_number}}-${{github.run_attempt}}
+    outputs:
+      tagName: ${{ steps.tagName.outputs.tag }}
+      versionLabel: ${{ steps.versionLabel.outputs.result }}
 
   publish:
     if: startsWith(github.ref, 'refs/tags/')
@@ -50,8 +59,6 @@ jobs:
       run: |
         cd target
         ls -la
-    - uses: olegtarasov/get-tag@v2.1.1
-      id: tagName
     - name: Log in to Docker Hub
       env:
         DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
@@ -59,7 +66,9 @@ jobs:
       run: |
         docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
     - name: Deploy Docker image
+      env:
+        BUILDNUMBER: ${{needs.build.outputs.versionLabel}}
       run: |
-        docker build . --build-arg JAR_FILE=target/flixtraktor-$GIT_TAG_NAME.${{github.run_number}}.${{github.run_attempt}}.jar \
-          --tag ${{ secrets.DOCKER_USERNAME }}/flixtraktor:$GIT_TAG_NAME.${{github.run_number}}.${{github.run_attempt}}
-        docker push ${{ secrets.DOCKER_USERNAME }}/flixtraktor:$GIT_TAG_NAME.${{github.run_number}}.${{github.run_attempt}}
+        docker build . --build-arg JAR_FILE=target/flixtraktor-$BUILDNUMBER.jar \
+          --tag ${{ secrets.DOCKER_USERNAME }}/flixtraktor:$BUILDNUMBER
+        docker push ${{ secrets.DOCKER_USERNAME }}/flixtraktor:$BUILDNUMBER
