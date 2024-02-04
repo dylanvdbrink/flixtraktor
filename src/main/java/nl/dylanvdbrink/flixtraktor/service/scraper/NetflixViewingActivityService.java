@@ -82,9 +82,9 @@ public class NetflixViewingActivityService {
             driver.findElement(By.id("email")).submit();
         } catch (NoSuchElementException nsee) {
             log.debug("Trying alternate element ids for logging in");
-            driver.findElement(By.id("id_userLoginId")).sendKeys(netflixUsername);
-            driver.findElement(By.id("id_password")).sendKeys(netflixPassword);
-            driver.findElement(By.id("id_userLoginId")).submit();
+            driver.findElement(By.name("userLoginId")).sendKeys(netflixUsername);
+            driver.findElement(By.name("password")).sendKeys(netflixPassword);
+            driver.findElement(By.name("userLoginId")).submit();
         }
         log.debug("Success logging in");
 
@@ -111,21 +111,17 @@ public class NetflixViewingActivityService {
         }
         log.debug("Success selecting profile " + netflixProfile);
 
-        log.debug("Retrieving buildidentifier...");
-        String buildIdentifier = (String) js.executeScript("return netflix.appContext.state.model.models.serverDefs.data.BUILD_IDENTIFIER");
-        log.debug("Success: " + buildIdentifier);
-
-        log.debug("Retrieving viewing activity...");
-        driver.get(String.format("%s/shakti/%s/viewingactivity?pgsize=%s", NETFLIX_BASEURL, buildIdentifier, pageSize));
+        log.info("Retrieving viewing activity...");
+        driver.get(String.format("%s/shakti/mre/viewingactivity?pgsize=%s", NETFLIX_BASEURL, pageSize));
         String pageSource = driver.getPageSource();
-        log.debug("Pagesource subset (0-1000): " + pageSource.substring(0, 1000));
+        log.debug("Pagesource subset (0-1000): " + pageSource.substring(0, 100));
         JsonReader reader = new JsonReader(new StringReader(removeHtmlTags(pageSource)));
         reader.setLenient(true);
         JsonElement element = JsonParser.parseReader(reader);
 
         Type listType = new TypeToken<ArrayList<NetflixTitle>>(){}.getType();
         titles = gson.fromJson(element.getAsJsonObject().get("viewedItems"), listType);
-        log.debug("Success retrieving viewing activity");
+        log.info("Success retrieving viewing activity");
 
         return titles;
     }

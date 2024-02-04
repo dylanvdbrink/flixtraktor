@@ -9,6 +9,7 @@ import lombok.extern.apachecommons.CommonsLog;
 import nl.dylanvdbrink.flixtraktor.pojo.NetflixTitle;
 import nl.dylanvdbrink.flixtraktor.pojo.StoredAuthData;
 import nl.dylanvdbrink.flixtraktor.service.storage.StorageService;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.javatuples.Triplet;
 import org.springframework.beans.factory.annotation.Value;
@@ -53,6 +54,10 @@ public class TraktClient {
     }
 
     public DeviceCode getDeviceCode() throws TraktException {
+        if (StringUtils.isEmpty(this.clientId.client_id)) {
+            throw new TraktException("Client ID was not configured");
+        }
+
         try {
             Response<DeviceCode> response = traktApi.authentication().generateDeviceCode(this.clientId).execute();
             return response.body();
